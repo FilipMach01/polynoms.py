@@ -1,4 +1,6 @@
 from collections import namedtuple
+from operator import attrgetter
+from mercurial.hgweb.common import continuereader
 
 Term = namedtuple('Term', ["q", "e"])
 
@@ -32,9 +34,45 @@ def parse(poly):
     return polynomial
 
 
-input_string = "(4x^3 - 8x^2)/(2x^2)"
+def sort_e(poly):
+    return sorted(parse(poly), key=attrgetter('e'), reverse=True)
 
-poly_1, poly_2 = input_string.split("/")
 
-# print([split_term(term) for term in split_poly(clean_up(poly_1))])
-print(parse(poly_1))
+#alg
+
+def div_leading(num, denum):
+
+    return Term(num[0].q / denum[0].q, num[0].e - denum[0].e)
+
+def mult_poly(poly, term):
+
+    return sorted([Term(t.q * term.q, t.e + term.e) for t in poly],
+                  key=lambda t: t.e, reverse=True)
+
+def sub_poly(a, b):
+
+    terms = {t.e: t.q for t in a}
+    for t in b:
+        terms[t.e] = terms.get(t.e, 0) - t.q
+    result = sorted([Term(q, e) for e, q in terms.items() if q != 0],
+                    key=lambda t: t.e, reverse=True)
+    return result
+
+
+input_string = "(6x^3 + 11x^2 - 4x^1 - 4x^0)/(3x^1 - 2x^0)"
+n, d = input_string.split("/")
+
+num = sort_e(n)
+denum = sort_e(d)
+result = []
+
+while num and num[0].e >= denum[0].e:
+    lead = div_leading(num, denum)
+    result.append(lead)
+    product = mult_poly(denum, lead)
+    num = sub_poly(num, product)
+
+print("Result:", result)
+print("Residue:", num)
+
+
